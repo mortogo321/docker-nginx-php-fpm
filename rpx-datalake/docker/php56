@@ -1,0 +1,59 @@
+FROM php:5.6.40-fpm
+
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+        -e 's|security.debian.org|archive.debian.org/|g' \
+        -e '/stretch-updates/d' /etc/apt/sources.list
+
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+        freetds-dev \
+        freetds-bin \
+        freetds-common \
+        libct4 \
+        libc-client-dev \
+        libcurl4-openssl-dev \
+        libedit-dev \
+        libdbd-freetds \
+        libfreetype6-dev \
+        libgd-dev \
+        libjpeg62-turbo-dev \
+        libmcrypt-dev \
+        libmemcached-dev \
+        libpng-dev \
+        libqt4-sql-tds \
+        libqt5sql5-tds \
+        libqxmlrpc-dev \
+        libsqlite3-dev \
+        libssl-dev \
+        libsybdb5 \
+        libxml2-dev \
+        libzip-dev \
+        locales \
+        zlib1g-dev \
+        nano \
+        wget \
+        zip
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+RUN sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+RUN locale-gen
+
+RUN cd /tmp
+RUN wget --no-check-certificate https://pecl.php.net/get/memcached-2.2.0.tgz
+RUN wget --no-check-certificate https://pecl.php.net/get/memcache-2.2.7.tgz
+RUN echo | pecl install --offline ./memcached-2.2.0.tgz
+RUN echo | pecl install --offline ./memcache-2.2.7.tgz
+RUN rm -rf *.tgz
+
+RUN ln -s /usr/lib/x86_64-linux-gnu/libsybdb.so /usr/lib/libsybdb.so
+RUN ln -s /usr/lib/x86_64-linux-gnu/libsybdb.a /usr/lib/libsybdb.a
+
+RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/
+RUN docker-php-ext-configure mssql
+RUN docker-php-ext-configure mysql --with-mysql=mysqlnd
+RUN docker-php-ext-configure zip --with-libzip
+RUN docker-php-ext-install bcmath curl gd intl mbstring mcrypt mssql mysql mysqli opcache soap zip
+RUN docker-php-ext-enable memcached memcache
+
+RUN sed -e 's/\[global\]/\[global\]\n\ttds version = 7.0\n\tclient charset = UTF-8\n/' -i /etc/freetds/freetds.conf

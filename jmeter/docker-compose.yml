@@ -1,0 +1,4 @@
+services:
+  jmeter:
+    image: justb4/jmeter:latest
+    

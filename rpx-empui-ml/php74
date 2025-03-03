@@ -1,0 +1,24 @@
+FROM php:7.4-fpm
+
+RUN apt update
+RUN apt install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    nano \
+    sqlite3 \
+    wget \
+    unzip \
+    zip
+
+RUN apt clean && rm -rf /var/lib/apt/lists/*
+
+RUN pecl install redis
+
+RUN docker-php-ext-install bcmath exif gd mbstring mysqli opcache pcntl pdo_mysql zip
+RUN docker-php-ext-enable redis
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
